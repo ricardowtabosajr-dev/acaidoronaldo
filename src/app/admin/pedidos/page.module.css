@@ -1,0 +1,271 @@
+.header {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+@media (max-width: 576px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+.header h1 {
+  font-size: 2rem;
+  color: var(--acai-deep);
+  margin-bottom: 0.25rem;
+}
+
+.filterTabs {
+  display: flex;
+  gap: 0.5rem;
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  padding: 0.35rem;
+  border-radius: var(--border-radius-sm);
+}
+
+.filterTab {
+  padding: 0.5rem 0.85rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.filterTabActive {
+  background-color: var(--acai-primary);
+  color: #ffffff;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.orderCard {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  gap: 1.5rem;
+  transition: var(--transition-normal);
+}
+
+@media (max-width: 992px) {
+  .orderCard {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .orderCard {
+    grid-template-columns: 1fr;
+  }
+}
+
+.orderCard:hover {
+  border-color: rgba(61, 5, 55, 0.15);
+  box-shadow: var(--shadow-md);
+}
+
+.orderMeta h3 {
+  font-size: 1.15rem;
+  margin-bottom: 0.5rem;
+  color: var(--acai-deep);
+}
+
+.orderDate {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.status_pending {
+  background-color: var(--gold-light);
+  color: var(--gold-primary);
+}
+
+.status_preparing {
+  background-color: var(--acai-soft);
+  color: var(--acai-primary);
+}
+
+.status_delivering {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.status_delivered {
+  background-color: var(--green-light);
+  color: var(--green-primary);
+}
+
+.status_cancelled {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.orderDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.addressBox {
+  font-size: 0.9rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.addressBox svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--acai-light);
+}
+
+.itemsList {
+  background-color: var(--background);
+  padding: 0.75rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.itemName {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.orderActions {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .orderActions {
+    align-items: flex-start;
+  }
+}
+
+.priceBlock {
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .priceBlock {
+    text-align: left;
+  }
+}
+
+.totalPrice {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--acai-deep);
+}
+
+.paymentLabel {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.actionButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .actionButtons {
+    justify-content: flex-start;
+  }
+}
+
+.btn {
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid transparent;
+  transition: var(--transition-fast);
+}
+
+.btnPrimary {
+  background-color: var(--acai-primary);
+  color: #ffffff;
+}
+
+.btnPrimary:hover {
+  background-color: var(--acai-medium);
+}
+
+.btnSuccess {
+  background-color: var(--green-primary);
+  color: #ffffff;
+}
+
+.btnSuccess:hover {
+  background-color: var(--green-deep);
+}
+
+.btnDanger {
+  background-color: transparent;
+  border-color: #ffebee;
+  color: #d32f2f;
+}
+
+.btnDanger:hover {
+  background-color: #ffebee;
+}
+
+.btnWhatsapp {
+  background-color: #25d366;
+  color: #ffffff;
+}
+
+.btnWhatsapp:hover {
+  background-color: #128c7e;
+}
+
+.emptyState {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius-md);
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-muted);
+}

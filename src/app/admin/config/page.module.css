@@ -1,0 +1,247 @@
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-size: 2rem;
+  color: var(--acai-deep);
+  margin-bottom: 0.25rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 2rem;
+}
+
+@media (max-width: 992px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius-md);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-sm);
+  height: fit-content;
+  margin-bottom: 1.5rem;
+}
+
+.card h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  color: var(--acai-primary);
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 0.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.formGroup label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.input {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  outline: none;
+  transition: var(--transition-fast);
+}
+
+.input:focus {
+  border-color: var(--acai-primary);
+}
+
+/* Toggle Switch */
+.toggleContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--background);
+  margin-bottom: 1.25rem;
+}
+
+.toggleLabel {
+  display: flex;
+  flex-direction: column;
+}
+
+.toggleLabelTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.toggleLabelSub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+.switch input:checked + .slider {
+  background-color: var(--green-primary);
+}
+
+.switch input:focus + .slider {
+  box-shadow: 0 0 1px var(--green-primary);
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+.saveBtn {
+  width: 100%;
+  padding: 0.85rem;
+  border: none;
+  background-color: var(--acai-primary);
+  color: #ffffff;
+  border-radius: var(--border-radius-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.saveBtn:hover {
+  background-color: var(--acai-medium);
+}
+
+/* Neighborhood List Styling */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.listItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--background);
+  transition: var(--transition-fast);
+}
+
+.listItem:hover {
+  border-color: rgba(61, 5, 55, 0.15);
+}
+
+.listItemName {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.listItemFee {
+  font-weight: 800;
+  color: var(--green-primary);
+  margin-right: 1rem;
+}
+
+.deleteBtn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.35rem;
+  border-radius: 4px;
+  transition: var(--transition-fast);
+}
+
+.deleteBtn:hover {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.inlineForm {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr auto;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  align-items: flex-end;
+}
+
+@media (max-width: 576px) {
+  .inlineForm {
+    grid-template-columns: 1fr;
+  }
+}
+
+.addBtn {
+  height: 42px;
+  padding: 0 1rem;
+  border: none;
+  background-color: var(--green-primary);
+  color: white;
+  border-radius: var(--border-radius-sm);
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.addBtn:hover {
+  background-color: var(--green-deep);
+}
+
+.emptyState {
+  padding: 2rem 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}

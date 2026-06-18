@@ -1,0 +1,66 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: var(--background);
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius-lg);
+  padding: 3rem 2rem;
+  max-width: 450px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.card h2 {
+  font-size: 1.75rem;
+  color: var(--acai-deep);
+  margin-bottom: 0.5rem;
+}
+
+.card p {
+  color: var(--text-secondary);
+  line-height: 1.5;
+  font-size: 1.05rem;
+}
+
+.feedbackMsg {
+  font-weight: 700;
+  color: var(--acai-primary) !important;
+  font-size: 1.15rem !important;
+  margin-top: 0.5rem;
+}
+
+.spinner {
+  color: var(--acai-primary);
+  animation: spin 1s linear infinite;
+}
+
+.successIcon {
+  color: var(--green-primary);
+  filter: drop-shadow(0 4px 6px rgba(16, 185, 129, 0.2));
+}
+
+.errorIcon {
+  color: #ef4444;
+  filter: drop-shadow(0 4px 6px rgba(239, 68, 68, 0.2));
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

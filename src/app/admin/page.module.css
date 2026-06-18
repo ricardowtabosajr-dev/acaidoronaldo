@@ -1,0 +1,201 @@
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-size: 2rem;
+  color: var(--acai-deep);
+  margin-bottom: 0.25rem;
+}
+
+.header p {
+  color: var(--text-secondary);
+}
+
+/* Grid de Métricas */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.metricCard {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius-md);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast);
+}
+
+.metricCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.metricInfo h3 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.metricValue {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.metricIcon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconPurple {
+  background-color: var(--acai-soft);
+  color: var(--acai-primary);
+}
+
+.iconGreen {
+  background-color: var(--green-light);
+  color: var(--green-primary);
+}
+
+.iconRed {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.iconGold {
+  background-color: var(--gold-light);
+  color: var(--gold-primary);
+}
+
+/* Charts and grids */
+.row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 992px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius-md);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 2rem;
+}
+
+.card h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1.25rem;
+  color: var(--acai-primary);
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 0.5rem;
+}
+
+/* Orders List on Admin */
+.ordersTableContainer {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th, .table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--card-border);
+  font-size: 0.9rem;
+}
+
+.table th {
+  font-weight: 700;
+  color: var(--text-secondary);
+  background-color: var(--background);
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status_pending {
+  background-color: var(--gold-light);
+  color: var(--gold-primary);
+}
+
+.status_preparing {
+  background-color: var(--acai-soft);
+  color: var(--acai-primary);
+}
+
+.status_delivering {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.status_delivered {
+  background-color: var(--green-light);
+  color: var(--green-primary);
+}
+
+.status_cancelled {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+/* Sales Summary Details */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.listItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: var(--background);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
+}
+
+.listItemName {
+  font-weight: 600;
+}
+
+.listItemValue {
+  font-weight: 700;
+  color: var(--acai-deep);
+}
+
+.emptyState {
+  padding: 2rem 0;
+  text-align: center;
+  color: var(--text-muted);
+}
