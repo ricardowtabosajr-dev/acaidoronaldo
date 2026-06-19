@@ -40,6 +40,7 @@
   .main {
     grid-template-columns: 1fr;
     padding: 1.5rem 1rem;
+    gap: 1.5rem;
   }
 }
 
@@ -55,6 +56,12 @@
   border-radius: var(--border-radius-md);
   padding: 1.75rem;
   box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 1.25rem;
+  }
 }
 
 .card h2 {

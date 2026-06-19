@@ -256,5 +256,25 @@ export const db = {
     }
     setLocalStorageData('acai_store_settings', settings);
     return settings;
+  },
+
+  async getChatHistory(phone: string): Promise<any[]> {
+    if (isSupabaseConfigured && supabase) {
+      const { data } = await supabase
+        .from('chat_sessions')
+        .select('history')
+        .eq('phone', phone)
+        .single();
+      return data ? data.history : [];
+    }
+    return [];
+  },
+
+  async saveChatHistory(phone: string, history: any[]) {
+    if (isSupabaseConfigured && supabase) {
+      await supabase
+        .from('chat_sessions')
+        .upsert({ phone, history }, { onConflict: 'phone' });
+    }
   }
 };

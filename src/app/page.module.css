@@ -21,6 +21,14 @@
   transition: var(--transition-normal);
 }
 
+@media (max-width: 768px) {
+  .header {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -44,6 +52,12 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   font-weight: 800;
+}
+
+@media (max-width: 768px) {
+  .brandName {
+    font-size: 1.35rem;
+  }
 }
 
 .statusBadge {
@@ -109,6 +123,13 @@
   font-size: 3rem;
   margin-bottom: 1rem;
   color: var(--acai-deep);
+  line-height: 1.1;
+}
+
+@media (max-width: 768px) {
+  .heroContent h1 {
+    font-size: 2.2rem;
+  }
 }
 
 .heroContent span {
@@ -145,6 +166,14 @@
   transition: var(--transition-normal);
 }
 
+@media (max-width: 768px) {
+  .heroImageWrapper {
+    width: 260px;
+    height: 260px;
+    margin: 0 auto;
+  }
+}
+
 .heroImageWrapper:hover {
   transform: rotate(0deg) scale(1.03);
 }
@@ -168,6 +197,13 @@
 @media (max-width: 992px) {
   .main {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding: 1.5rem 1rem;
+    gap: 2rem;
   }
 }
 
@@ -495,6 +531,13 @@
   color: #ffffff;
   padding: 3rem 2rem 1.5rem;
   margin-top: 4rem;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    padding: 2rem 1rem 1rem;
+    margin-top: 2rem;
+  }
 }
 
 .footerContent {
