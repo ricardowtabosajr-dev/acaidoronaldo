@@ -14,27 +14,30 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // A Evolution API manda eventos "messages.upsert" quando chega mensagem nova
-    if (body.event !== 'messages.upsert') {
+    // A Evolution Go manda eventos "Message" quando chega mensagem nova
+    if (body.event !== 'Message') {
       return NextResponse.json({ ok: true, reason: 'Ignorado (não é mensagem)' });
     }
 
-    const messagePayload = body.data?.message;
-    if (!messagePayload) {
+    const info = body.data?.Info;
+    const message = body.data?.Message;
+    if (!info || !message) {
       return NextResponse.json({ ok: true, reason: 'Sem payload de mensagem' });
     }
 
-    // Apenas mensagens de texto simples ou extended text (ignoramos áudio por enquanto)
-    const textMessage = messagePayload.message?.conversation || messagePayload.message?.extendedTextMessage?.text;
-    const remoteJid = messagePayload.key?.remoteJid; // O número do WhatsApp (ex: 5581999999999@s.whatsapp.net)
-    const fromMe = messagePayload.key?.fromMe; // Se fomos nós que mandamos, ignoramos
+    // Texto simples (conversation) ou texto estendido (extendedTextMessage)
+    const textMessage = message.conversation || message.extendedTextMessage?.text;
+    const senderJid = info.Sender as string | undefined; // ex: 559181095800@s.whatsapp.net
+    const fromMe = info.IsFromMe; // mensagens enviadas por nós, ignoramos
+    const isGroup = info.IsGroup;
 
-    if (fromMe || !textMessage || !remoteJid || remoteJid.includes('@g.us')) {
-      // Ignorar grupos e mensagens próprias
+    if (fromMe || isGroup || !textMessage || !senderJid) {
+      // Ignorar grupos, mensagens próprias e não-texto
       return NextResponse.json({ ok: true, reason: 'Ignorado (grupo, próprio ou não-texto)' });
     }
 
-    const phoneNumber = remoteJid.split('@')[0];
+    // Remove o domínio e um eventual sufixo de dispositivo (ex: "5591...:55@s.whatsapp.net")
+    const phoneNumber = senderJid.split('@')[0].split(':')[0];
     
     // Recuperar histórico do banco de dados (as últimas ~20 interações para contexto)
     let history = await db.getChatHistory(phoneNumber);

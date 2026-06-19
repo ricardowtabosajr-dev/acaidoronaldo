@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     <p>Webhook configurado: <code>${webhookUrl}</code> ${ok ? '✅' : '⚠️'}</p>
     <p>Abra o WhatsApp do Ronaldo → <b>Aparelhos conectados</b> → <b>Conectar um aparelho</b> e escaneie:</p>
     ${imgSrc ? `<img src="${imgSrc}" alt="QR Code" style="width:280px;height:280px;border:1px solid #ddd;border-radius:8px" />` : ''}
-    ${qr.pairingCode ? `<p>Ou use o código de pareamento: <code style="font-size:1.2rem">${qr.pairingCode}</code></p>` : ''}
+    ${qr.code ? `<p style="color:#999;font-size:11px;word-break:break-all">Código: ${qr.code}</p>` : ''}
     <p style="color:#666">O QR Code expira em ~1 minuto. Recarregue esta página para gerar um novo.</p>
   `;
 

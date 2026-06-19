@@ -1,12 +1,20 @@
 /**
  * Serviço de Integração com a Evolution Go (WhatsApp)
- * 
- * Baseado no repositório: https://github.com/evolution-foundation/evolution-go
- * 
+ *
+ * Repositório: https://github.com/EvolutionAPI/evolution-go
+ *
+ * IMPORTANTE: a Evolution Go tem uma API diferente da Evolution API clássica:
+ * - A instância é identificada pelo header `apikey` (= token da instância),
+ *   e NÃO por um path /{instanceName}.
+ * - Envio de texto: POST /send/text  { number, text, delay }
+ * - Criar instância: POST /instance/create  { name, token }
+ * - Conectar/QR: POST /instance/connect  { webhookUrl, subscribe } + GET /instance/qr
+ * - Status: GET /instance/status -> { Connected, LoggedIn, Name }
+ *
  * Configurar no .env.local:
  * EVOLUTION_API_URL=http://localhost:8080 (ou URL da sua VPS)
- * EVOLUTION_API_KEY=sua_global_api_key (GLOBAL_API_KEY do .env da Evolution Go)
- * EVOLUTION_INSTANCE_NAME=nome_da_instancia_criada
+ * EVOLUTION_API_KEY=token_da_instancia (use o mesmo valor no token ao criar a instância)
+ * EVOLUTION_INSTANCE_NAME=acai-bot
  */
 
 export const evolutionService = {
@@ -28,8 +36,9 @@ export const evolutionService = {
   },
 
   /**
-   * Cria uma instância na Evolution Go (caso ainda não exista).
-   * Após criar, acesse GET /instance/connect/{instanceName} para obter o QR Code.
+   * Cria a instância na Evolution Go (idempotente: se já existir, apenas segue).
+   * O `token` da instância é definido como a própria EVOLUTION_API_KEY, para que
+   * a mesma chave sirva tanto para criar quanto para operar a instância.
    */
   async createInstance(instanceName?: string): Promise<boolean> {
     if (!this.isConfigured()) {
@@ -40,76 +49,51 @@ export const evolutionService = {
     const name = instanceName || this.getInstanceName();
 
     try {
-      const endpoint = `${this.getApiUrl()}/instance/create`;
-      
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${this.getApiUrl()}/instance/create`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': this.getApiKey()
-        },
-        body: JSON.stringify({
-          instanceName: name,
-          qrcode: true,
-          // Configurar webhook para receber mensagens
-          webhook: {
-            url: process.env.NEXT_PUBLIC_SITE_URL 
-              ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/whatsapp/webhook`
-              : '',
-            events: ['MESSAGES_UPSERT'],
-            byEvents: false,
-          }
-        })
+        headers: { 'Content-Type': 'application/json', 'apikey': this.getApiKey() },
+        body: JSON.stringify({ name, token: this.getApiKey() })
       });
 
       if (!response.ok) {
+        // 4xx aqui normalmente significa "instância já existe" — não é fatal.
         const errorText = await response.text();
-        console.error('Erro ao criar instância Evolution Go:', response.status, errorText);
+        console.warn('createInstance (provavelmente já existe):', response.status, errorText);
         return false;
       }
 
       console.log(`✅ Instância "${name}" criada na Evolution Go.`);
       return true;
     } catch (err) {
-      console.error('Erro ao conectar com Evolution Go:', err);
+      console.error('Erro ao criar instância Evolution Go:', err);
       return false;
     }
   },
 
   /**
-   * Envia uma mensagem de texto simples via WhatsApp
-   * 
-   * Endpoint Evolution Go: POST /message/sendText/{instanceName}
-   * Header de autenticação: apikey
+   * Envia uma mensagem de texto via WhatsApp.
+   * Endpoint Evolution Go: POST /send/text  { number, text, delay }
+   * A instância é identificada pelo header `apikey` (token da instância).
    */
   async sendText(number: string, text: string): Promise<boolean> {
     if (!this.isConfigured()) {
-      console.warn('⚠️ Evolution Go não configurada. Mensagem não enviada:', { number, text });
+      console.warn('⚠️ Evolution Go não configurada. Mensagem não enviada para', number);
       return false;
     }
 
     try {
-      // Formata número (Evolution Go aceita números sem o + e com DDI, ex: 5581999999999)
+      // Número com DDI, somente dígitos (ex: 5581999999999)
       const cleanNumber = number.replace(/\D/g, '');
 
-      const endpoint = `${this.getApiUrl()}/message/sendText/${this.getInstanceName()}`;
-      
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${this.getApiUrl()}/send/text`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': this.getApiKey()
-        },
-        body: JSON.stringify({
-          number: cleanNumber,
-          text: text,
-          delay: 1200, // Delay humano na digitação
-        })
+        headers: { 'Content-Type': 'application/json', 'apikey': this.getApiKey() },
+        body: JSON.stringify({ number: cleanNumber, text, delay: 1200 })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Erro na Evolution Go:', response.status, errorText);
+        console.error('Erro ao enviar texto (Evolution Go):', response.status, errorText);
         return false;
       }
 
@@ -121,64 +105,37 @@ export const evolutionService = {
   },
 
   /**
-   * Configura o webhook da instância para receber mensagens
-   * 
-   * Endpoint: POST /webhook/set/{instanceName}
+   * Status da conexão da instância.
+   * GET /instance/status -> { Connected, LoggedIn, Name }
+   * LoggedIn = true significa que o WhatsApp está pareado.
    */
-  async setWebhook(webhookUrl: string): Promise<boolean> {
-    if (!this.isConfigured()) {
-      console.warn('⚠️ Evolution Go não configurada.');
-      return false;
-    }
-
+  async getStatus(): Promise<{ Connected: boolean; LoggedIn: boolean; Name: string } | null> {
+    if (!this.isConfigured()) return null;
     try {
-      const endpoint = `${this.getApiUrl()}/webhook/set/${this.getInstanceName()}`;
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': this.getApiKey()
-        },
-        body: JSON.stringify({
-          url: webhookUrl,
-          events: ['MESSAGES_UPSERT'],
-          enabled: true,
-        })
+      const response = await fetch(`${this.getApiUrl()}/instance/status`, {
+        headers: { 'apikey': this.getApiKey() }
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Erro ao configurar webhook:', response.status, errorText);
-        return false;
-      }
-
-      console.log(`✅ Webhook configurado: ${webhookUrl}`);
-      return true;
+      if (!response.ok) return null;
+      const json = await response.json();
+      return json.data || null;
     } catch (err) {
-      console.error('Erro ao configurar webhook:', err);
-      return false;
+      console.error('Erro ao obter status da Evolution Go:', err);
+      return null;
     }
   },
 
   /**
-   * Obtém o QR Code para parear o WhatsApp da instância.
-   *
-   * Endpoint: GET /instance/connect/{instanceName}
-   * Retorna normalmente { base64, code, pairingCode } — base64 é a imagem
-   * do QR (data URL) e pairingCode é o código alternativo de pareamento.
+   * Obtém o QR Code para parear o WhatsApp.
+   * GET /instance/qr -> { data: { Qrcode (data URL), Code (string de pareamento) } }
    */
-  async getQrCode(): Promise<{ base64?: string; code?: string; pairingCode?: string } | null> {
+  async getQrCode(): Promise<{ base64?: string; code?: string } | null> {
     if (!this.isConfigured()) {
       console.warn('⚠️ Evolution Go não configurada.');
       return null;
     }
 
     try {
-      const endpoint = `${this.getApiUrl()}/instance/connect/${this.getInstanceName()}`;
-
-      const response = await fetch(endpoint, {
-        method: 'GET',
+      const response = await fetch(`${this.getApiUrl()}/instance/qr`, {
         headers: { 'apikey': this.getApiKey() }
       });
 
@@ -188,7 +145,9 @@ export const evolutionService = {
         return null;
       }
 
-      return await response.json();
+      const json = await response.json();
+      const data = json.data || {};
+      return { base64: data.Qrcode, code: data.Code };
     } catch (err) {
       console.error('Erro ao obter QR Code:', err);
       return null;
@@ -196,26 +155,39 @@ export const evolutionService = {
   },
 
   /**
-   * Orquestra a conexão completa: cria a instância (se necessário),
-   * configura o webhook e retorna o QR Code para escanear.
+   * Orquestra a conexão: cria a instância (se necessário), inicia a conexão
+   * apontando o webhook para a app e retorna o QR Code para escanear.
    */
   async connect(siteUrl: string): Promise<{
     ok: boolean;
     webhookUrl: string;
-    qr: { base64?: string; code?: string; pairingCode?: string } | null;
+    qr: { base64?: string; code?: string } | null;
   }> {
     const cleanSiteUrl = siteUrl.endsWith('/') ? siteUrl.slice(0, -1) : siteUrl;
     const webhookUrl = `${cleanSiteUrl}/api/whatsapp/webhook`;
 
-    // 1. Garante que a instância existe (idempotente — se já existir, seguimos)
+    // 1. Garante que a instância existe (idempotente).
     await this.createInstance();
 
-    // 2. Configura o webhook apontando para a app
-    const webhookOk = await this.setWebhook(webhookUrl);
+    // 2. Inicia a conexão e registra o webhook + eventos de mensagem.
+    let connectOk = false;
+    try {
+      const response = await fetch(`${this.getApiUrl()}/instance/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': this.getApiKey() },
+        body: JSON.stringify({ webhookUrl, subscribe: ['MESSAGE'], immediate: true })
+      });
+      connectOk = response.ok;
+      if (!response.ok) {
+        console.error('Erro no /instance/connect:', response.status, await response.text());
+      }
+    } catch (err) {
+      console.error('Erro ao conectar instância:', err);
+    }
 
-    // 3. Busca o QR Code para o pareamento
+    // 3. Busca o QR Code para o pareamento.
     const qr = await this.getQrCode();
 
-    return { ok: webhookOk && Boolean(qr), webhookUrl, qr };
+    return { ok: connectOk && Boolean(qr), webhookUrl, qr };
   }
 };
