@@ -337,7 +337,7 @@ export default function Catalog() {
 
               <div className={styles.cartSummary}>
                 <div className={styles.summaryRow}>
-                  <span>Liters de Açaí:</span>
+                  <span>Litros de Açaí:</span>
                   <span style={{ fontWeight: 600 }}>{getLitersCount().toFixed(1)} L</span>
                 </div>
                 <div className={styles.summaryRow}>

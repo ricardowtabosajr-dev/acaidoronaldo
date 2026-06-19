@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { evolutionService } from '@/lib/evolution';
 import { agentService } from '@/lib/agent';
-import { db, OrderData, OrderItem } from '@/lib/database';
-import { generatePaymentLink } from '@/lib/infinitepay';
+import { db } from '@/lib/database';
+import { infinitePay } from '@/lib/infinitepay';
+
+// Preços reais do cardápio (devem estar sincronizados com page.tsx e agent.ts)
+const PRICES: Record<string, Record<number, number>> = {
+  grosso: { 0.5: 18.00, 1.0: 32.00 },
+  medio: { 0.5: 14.00, 1.0: 25.00 }
+};
 
 export async function POST(req: NextRequest) {
   try {
@@ -44,69 +50,73 @@ export async function POST(req: NextRequest) {
     let responseText = "";
 
     if (aiResult.type === 'text') {
-      responseText = aiResult.data;
+      responseText = aiResult.data as string;
       history.push({ role: 'model', parts: [{ text: responseText }] });
     } else if (aiResult.type === 'finish_order') {
       // O Gemini estruturou o pedido!
       const orderData = aiResult.data as any;
       
-      // Criar o pedido no sistema
-      // Primeiro calculamos o total e a taxa
+      // Buscar configurações e taxa de entrega
       const settings = await db.getSettings();
       let deliveryFee = settings.default_delivery_fee;
       
       // Buscar taxa do bairro se existir
+      let neighborhoodName = 'Não informado';
       if (orderData.delivery_neighborhood_id) {
         const neighborhoods = await db.getNeighborhoodFees();
         const found = neighborhoods.find(n => n.id === orderData.delivery_neighborhood_id);
-        if (found) deliveryFee = found.delivery_fee;
+        if (found) {
+          deliveryFee = found.delivery_fee;
+          neighborhoodName = found.name;
+        }
       }
       
-      // Calcular valor dos itens
+      // Calcular valor dos itens e formatar para o formato que db.createOrder espera
       let itemsTotal = 0;
-      const formattedItems: OrderItem[] = orderData.items.map((i: any) => {
-        // Preço base
-        let price = 0;
-        if (i.style === 'Grosso' && i.size === 1.0) price = 28;
-        if (i.style === 'Grosso' && i.size === 0.5) price = 15;
-        if (i.style === 'Medio' && i.size === 1.0) price = 22;
-        if (i.style === 'Medio' && i.size === 0.5) price = 12;
+      const formattedItems = orderData.items.map((i: any) => {
+        // Normaliza o estilo para minúsculo (o Gemini pode mandar "Grosso" ou "Medio")
+        const styleNormalized = i.style.toLowerCase() as 'grosso' | 'medio';
+        const size = Number(i.size) as 0.5 | 1.0;
+        const price = PRICES[styleNormalized]?.[size] || 0;
         
         itemsTotal += price * i.quantity;
         
         return {
-          id: Math.random().toString(), // fake ID for item
-          title: `Açaí ${i.style}`,
-          size: i.size === 1.0 ? '1 Litro' : '500ml',
-          price: price,
+          style: styleNormalized,
+          size: size,
           quantity: i.quantity,
-          image: '/acai.png'
+          price: price
         };
       });
+
+      const totalPrice = itemsTotal + deliveryFee;
       
-      const newOrder: OrderData = {
-        customer_name: orderData.customer_name,
-        customer_phone: phoneNumber,
-        customer_address: orderData.delivery_address,
-        neighborhood_id: orderData.delivery_neighborhood_id,
-        items: formattedItems,
-        delivery_fee: deliveryFee,
-        total_amount: itemsTotal + deliveryFee,
-        payment_method: 'infinitepay',
-        status: 'pending'
-      };
+      // Salvar pedido no DB usando a API correta (db.createOrder)
+      const savedOrder = await db.createOrder(
+        {
+          customer_name: orderData.customer_name,
+          customer_phone: phoneNumber,
+          delivery_address: `${orderData.delivery_address} - Bairro: ${neighborhoodName}`,
+          delivery_neighborhood_id: orderData.delivery_neighborhood_id || null,
+          delivery_fee: deliveryFee,
+          payment_method: 'infinitepay',
+          total_price: totalPrice
+        },
+        formattedItems
+      );
       
-      // Salvar pedido no DB
-      const savedOrder = await db.addOrder(newOrder);
-      
-      // Gerar link de pagamento
-      const paymentLink = await generatePaymentLink(newOrder.total_amount, savedOrder.id!);
+      // Gerar link de pagamento simulado
+      const paymentResponse = await infinitePay.generatePaymentLink(
+        savedOrder.id,
+        totalPrice,
+        orderData.customer_name
+      );
       
       responseText = `✅ *Pedido Confirmado!* 🎉\n\n` +
                      `Olá ${orderData.customer_name}, seu pedido foi registrado no nosso sistema!\n` +
-                     `Total a pagar (com entrega): *R$ ${(itemsTotal + deliveryFee).toFixed(2).replace('.', ',')}*\n\n` +
+                     `Total a pagar (com entrega): *R$ ${totalPrice.toFixed(2).replace('.', ',')}*\n\n` +
                      `Para começarmos a preparar seu açaí, faça o pagamento no link abaixo (Aceitamos PIX ou Cartão):\n` +
-                     `👉 ${paymentLink}\n\n` +
+                     `👉 ${paymentResponse.link_url}\n\n` +
                      `Muito obrigado pela preferência! 💜`;
                      
       history.push({ role: 'model', parts: [{ text: "O pedido foi finalizado. Eu enviei o link de pagamento." }] });

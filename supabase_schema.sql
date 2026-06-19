@@ -38,7 +38,7 @@ CREATE TABLE orders (
 CREATE TABLE order_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  style TEXT NOT NULL CHECK (style IN ('Grosso', 'Medio')),
+  style TEXT NOT NULL CHECK (style IN ('grosso', 'medio')),
   size DECIMAL(4, 2) NOT NULL CHECK (size IN (1.0, 0.5)),
   quantity INTEGER NOT NULL DEFAULT 1,
   price DECIMAL(10, 2) NOT NULL

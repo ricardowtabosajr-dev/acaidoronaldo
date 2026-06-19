@@ -31,8 +31,9 @@ const finishOrderDeclaration: FunctionDeclaration = {
           properties: {
             style: {
               type: SchemaType.STRING,
-              description: "Estilo do açaí (Grosso ou Medio)",
-              enum: ["Grosso", "Medio"]
+              format: "enum",
+              description: "Estilo do açaí (grosso ou medio)",
+              enum: ["grosso", "medio"]
             },
             size: {
               type: SchemaType.NUMBER,
@@ -74,7 +75,7 @@ SOBRE O NOSSO AÇAÍ:
 - Trabalhamos exclusivamente com polpa pura de açaí batido (sem corantes, conservantes ou misturas gourmet).
 - Temos dois estilos: "Grosso" e "Médio".
 - Temos dois tamanhos: 1 Litro e 500ml.
-- Preços: Açaí Grosso 1L (R$ 28,00), Grosso 500ml (R$ 15,00), Médio 1L (R$ 22,00), Médio 500ml (R$ 12,00).
+- Preços: Açaí Grosso 1L (R$ 32,00), Grosso 500ml (R$ 18,00), Médio 1L (R$ 25,00), Médio 500ml (R$ 14,00).
 
 ${neighborhoodsText}
 
