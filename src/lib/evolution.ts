@@ -159,5 +159,63 @@ export const evolutionService = {
       console.error('Erro ao configurar webhook:', err);
       return false;
     }
+  },
+
+  /**
+   * Obtém o QR Code para parear o WhatsApp da instância.
+   *
+   * Endpoint: GET /instance/connect/{instanceName}
+   * Retorna normalmente { base64, code, pairingCode } — base64 é a imagem
+   * do QR (data URL) e pairingCode é o código alternativo de pareamento.
+   */
+  async getQrCode(): Promise<{ base64?: string; code?: string; pairingCode?: string } | null> {
+    if (!this.isConfigured()) {
+      console.warn('⚠️ Evolution Go não configurada.');
+      return null;
+    }
+
+    try {
+      const endpoint = `${this.getApiUrl()}/instance/connect/${this.getInstanceName()}`;
+
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: { 'apikey': this.getApiKey() }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erro ao obter QR Code:', response.status, errorText);
+        return null;
+      }
+
+      return await response.json();
+    } catch (err) {
+      console.error('Erro ao obter QR Code:', err);
+      return null;
+    }
+  },
+
+  /**
+   * Orquestra a conexão completa: cria a instância (se necessário),
+   * configura o webhook e retorna o QR Code para escanear.
+   */
+  async connect(siteUrl: string): Promise<{
+    ok: boolean;
+    webhookUrl: string;
+    qr: { base64?: string; code?: string; pairingCode?: string } | null;
+  }> {
+    const cleanSiteUrl = siteUrl.endsWith('/') ? siteUrl.slice(0, -1) : siteUrl;
+    const webhookUrl = `${cleanSiteUrl}/api/whatsapp/webhook`;
+
+    // 1. Garante que a instância existe (idempotente — se já existir, seguimos)
+    await this.createInstance();
+
+    // 2. Configura o webhook apontando para a app
+    const webhookOk = await this.setWebhook(webhookUrl);
+
+    // 3. Busca o QR Code para o pareamento
+    const qr = await this.getQrCode();
+
+    return { ok: webhookOk && Boolean(qr), webhookUrl, qr };
   }
 };
