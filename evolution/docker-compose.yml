@@ -1,0 +1,55 @@
+# Evolution Go (WhatsApp) - ambiente LOCAL para testes
+#
+# Sobe a Evolution Go + PostgreSQL (dois bancos: evogo_auth e evogo_users).
+# A GLOBAL_API_KEY vem do arquivo evolution/.env (não versionado).
+#
+# Uso:
+#   cd evolution
+#   docker compose up -d
+#   docker compose logs -f evolution-go   # acompanhar inicialização
+#
+# A API fica em http://localhost:8080 (apikey = GLOBAL_API_KEY do .env)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: evo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: evogo_auth
+    volumes:
+      - evo_pgdata:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  evolution-go:
+    image: evoapicloud/evolution-go:0.7.1
+    container_name: evolution-go
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8080
+      GLOBAL_API_KEY: ${GLOBAL_API_KEY}
+      CLIENT_NAME: evolution
+      OS_NAME: Evolution GO
+      POSTGRES_AUTH_DB: postgresql://postgres:root@postgres:5432/evogo_auth?sslmode=disable
+      POSTGRES_USERS_DB: postgresql://postgres:root@postgres:5432/evogo_users?sslmode=disable
+      DATABASE_SAVE_MESSAGES: "false"
+      CONNECT_ON_STARTUP: "true"
+      LOGTYPE: console
+      WADEBUG: INFO
+      AMQP_GLOBAL_ENABLED: "false"
+      MINIO_ENABLED: "false"
+
+volumes:
+  evo_pgdata:
