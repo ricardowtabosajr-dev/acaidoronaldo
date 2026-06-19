@@ -2,7 +2,7 @@ import { GoogleGenerativeAI, FunctionDeclaration, SchemaType } from '@google/gen
 import { db, NeighborhoodFee } from './database';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const modelName = 'gemini-1.5-flash';
+const modelName = 'gemini-2.5-flash';
 
 // Esta é a função que o Gemini vai "chamar" quando o cliente terminar o pedido.
 const finishOrderDeclaration: FunctionDeclaration = {
