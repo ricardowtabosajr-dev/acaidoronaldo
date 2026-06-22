@@ -219,6 +219,23 @@ export const db = {
     return newCost;
   },
 
+  async updateCost(id: string, description: string, amount: number, date: string): Promise<Cost | null> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from('costs')
+        .update({ description, amount, date })
+        .eq('id', id)
+        .select()
+        .single();
+      if (!error && data) return data as Cost;
+      return null;
+    }
+    const current = getLocalStorageData('acai_costs', [] as Cost[]);
+    const updated = current.map(c => (c.id === id ? { ...c, description, amount, date } : c));
+    setLocalStorageData('acai_costs', updated);
+    return updated.find(c => c.id === id) || null;
+  },
+
   async deleteCost(id: string): Promise<boolean> {
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase.from('costs').delete().eq('id', id);

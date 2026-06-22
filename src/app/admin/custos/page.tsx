@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { db, Cost } from '@/lib/database';
-import { Plus, Trash2, Calendar, FileText, DollarSign, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Calendar, FileText, DollarSign, AlertCircle, Pencil, Check, X } from 'lucide-react';
 import styles from './page.module.css';
 
 export default function AdminCustos() {
@@ -11,6 +11,12 @@ export default function AdminCustos() {
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Edição inline de uma despesa
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDescription, setEditDescription] = useState('');
+  const [editAmount, setEditAmount] = useState('');
+  const [editDate, setEditDate] = useState('');
 
   useEffect(() => {
     async function loadCosts() {
@@ -58,10 +64,43 @@ export default function AdminCustos() {
 
   const handleDeleteCost = async (id: string) => {
     if (!confirm('Deseja realmente excluir este custo?')) return;
-    
+
     const success = await db.deleteCost(id);
     if (success) {
       setCosts(prev => prev.filter(c => c.id !== id));
+    }
+  };
+
+  const startEdit = (cost: Cost) => {
+    setEditingId(cost.id);
+    setEditDescription(cost.description);
+    setEditAmount(String(cost.amount));
+    // A data vem como YYYY-MM-DD (ou ISO); pega só a parte da data para o input.
+    setEditDate(String(cost.date).split('T')[0]);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+  };
+
+  const handleSaveEdit = async (id: string) => {
+    if (!editDescription || !editAmount || !editDate) {
+      alert('Preencha todos os campos!');
+      return;
+    }
+
+    const value = parseFloat(editAmount);
+    if (isNaN(value) || value <= 0) {
+      alert('Custo inválido!');
+      return;
+    }
+
+    const updated = await db.updateCost(id, editDescription, value, editDate);
+    if (updated) {
+      setCosts(prev => prev.map(c => (c.id === id ? updated : c)));
+      setEditingId(null);
+    } else {
+      alert('Erro ao atualizar a despesa.');
     }
   };
 
@@ -148,29 +187,84 @@ export default function AdminCustos() {
               <div className={styles.costsList}>
                 {costs.map(cost => (
                   <div key={cost.id} className={styles.costItem}>
-                    <div className={styles.costInfo}>
-                      <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <FileText size={16} style={{ color: 'var(--acai-primary)' }} />
-                        {cost.description}
-                      </h4>
-                      <span className={styles.costDate}>
-                        <Calendar size={12} style={{ display: 'inline', marginRight: '0.25rem' }} />
-                        {new Date(cost.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
-                      </span>
-                    </div>
+                    {editingId === cost.id ? (
+                      /* Modo de edição inline */
+                      <div className={styles.editRow}>
+                        <div className={styles.editFields}>
+                          <input
+                            type="text"
+                            value={editDescription}
+                            onChange={(e) => setEditDescription(e.target.value)}
+                            className={`${styles.input} ${styles.editDesc}`}
+                            placeholder="Descrição"
+                          />
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={editAmount}
+                            onChange={(e) => setEditAmount(e.target.value)}
+                            className={`${styles.input} ${styles.editAmount}`}
+                            placeholder="Valor"
+                          />
+                          <input
+                            type="date"
+                            value={editDate}
+                            onChange={(e) => setEditDate(e.target.value)}
+                            className={`${styles.input} ${styles.editDate}`}
+                          />
+                        </div>
+                        <div className={styles.costRight}>
+                          <button
+                            onClick={() => handleSaveEdit(cost.id)}
+                            className={styles.saveBtn}
+                            title="Salvar"
+                          >
+                            <Check size={16} />
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className={styles.deleteBtn}
+                            title="Cancelar"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Modo de exibição */
+                      <>
+                        <div className={styles.costInfo}>
+                          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <FileText size={16} style={{ color: 'var(--acai-primary)' }} />
+                            {cost.description}
+                          </h4>
+                          <span className={styles.costDate}>
+                            <Calendar size={12} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                            {new Date(cost.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                          </span>
+                        </div>
 
-                    <div className={styles.costRight}>
-                      <span className={styles.costAmount}>
-                        - R$ {Number(cost.amount).toFixed(2)}
-                      </span>
-                      <button 
-                        onClick={() => handleDeleteCost(cost.id)}
-                        className={styles.deleteBtn}
-                        title="Excluir despesa"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                        <div className={styles.costRight}>
+                          <span className={styles.costAmount}>
+                            - R$ {Number(cost.amount).toFixed(2)}
+                          </span>
+                          <button
+                            onClick={() => startEdit(cost)}
+                            className={styles.editBtn}
+                            title="Editar despesa"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCost(cost.id)}
+                            className={styles.deleteBtn}
+                            title="Excluir despesa"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

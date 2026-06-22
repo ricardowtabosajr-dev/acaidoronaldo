@@ -173,6 +173,68 @@
   color: #c62828;
 }
 
+.editBtn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.35rem;
+  border-radius: 4px;
+  transition: var(--transition-fast);
+}
+
+.editBtn:hover {
+  background-color: #f3e5f5;
+  color: var(--acai-primary);
+}
+
+.saveBtn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.35rem;
+  border-radius: 4px;
+  transition: var(--transition-fast);
+}
+
+.saveBtn:hover {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* Edição inline */
+.editRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.editFields {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.editFields .input {
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.9rem;
+}
+
+.editDesc {
+  flex: 1 1 100%;
+}
+
+.editAmount {
+  flex: 1 1 120px;
+}
+
+.editDate {
+  flex: 1 1 150px;
+}
+
 .emptyState {
   padding: 3rem 0;
   text-align: center;
