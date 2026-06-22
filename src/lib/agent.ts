@@ -1,59 +1,68 @@
-import { GoogleGenerativeAI, FunctionDeclaration, SchemaType } from '@google/generative-ai';
-import { db, NeighborhoodFee } from './database';
+import { db } from './database';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const modelName = 'gemini-2.5-flash';
+/**
+ * Agente de IA do WhatsApp via OpenRouter (API compatível com OpenAI).
+ *
+ * Configurar no .env.local:
+ * OPENROUTER_API_KEY=sk-or-...   (chave da OpenRouter)
+ * OPENROUTER_MODEL=openai/gpt-4o-mini   (opcional; modelo a usar)
+ */
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+const modelName = process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-// Esta é a função que o Gemini vai "chamar" quando o cliente terminar o pedido.
-const finishOrderDeclaration: FunctionDeclaration = {
-  name: "finish_order",
-  description: "Chame esta função APENAS quando o cliente já informou todos os dados obrigatórios para fechar o pedido de açaí (nome, estilo, tamanho, bairro de entrega, rua/endereço).",
-  parameters: {
-    type: SchemaType.OBJECT,
-    properties: {
-      customer_name: {
-        type: SchemaType.STRING,
-        description: "Nome do cliente",
-      },
-      delivery_address: {
-        type: SchemaType.STRING,
-        description: "O endereço completo de entrega (rua, número, complemento). Não inclua o nome do bairro aqui.",
-      },
-      delivery_neighborhood_id: {
-        type: SchemaType.STRING,
-        description: "O ID numérico do bairro escolhido pelo cliente (baseado na lista fornecida).",
-      },
-      items: {
-        type: SchemaType.ARRAY,
-        description: "Lista de itens (açaís) que o cliente pediu.",
+// Ferramenta (function/tool no formato OpenAI) que a IA "chama" ao fechar o pedido.
+const finishOrderTool = {
+  type: 'function',
+  function: {
+    name: 'finish_order',
+    description: "Chame esta função APENAS quando o cliente já informou todos os dados obrigatórios para fechar o pedido de açaí (nome, estilo, tamanho, bairro de entrega, rua/endereço).",
+    parameters: {
+      type: 'object',
+      properties: {
+        customer_name: {
+          type: 'string',
+          description: 'Nome do cliente',
+        },
+        delivery_address: {
+          type: 'string',
+          description: 'O endereço completo de entrega (rua, número, complemento). Não inclua o nome do bairro aqui.',
+        },
+        delivery_neighborhood_id: {
+          type: 'string',
+          description: 'O ID do bairro escolhido pelo cliente (baseado na lista fornecida).',
+        },
         items: {
-          type: SchemaType.OBJECT,
-          properties: {
-            style: {
-              type: SchemaType.STRING,
-              format: "enum",
-              description: "Estilo do açaí (grosso ou medio)",
-              enum: ["grosso", "medio"]
+          type: 'array',
+          description: 'Lista de itens (açaís) que o cliente pediu.',
+          items: {
+            type: 'object',
+            properties: {
+              style: {
+                type: 'string',
+                description: 'Estilo do açaí (grosso ou medio)',
+                enum: ['grosso', 'medio'],
+              },
+              size: {
+                type: 'number',
+                description: 'Tamanho do açaí (1.0 para 1 Litro, 0.5 para 500ml)',
+              },
+              quantity: {
+                type: 'integer',
+                description: 'Quantidade deste exato item',
+              },
             },
-            size: {
-              type: SchemaType.NUMBER,
-              description: "Tamanho do açaí (1.0 para 1 Litro, 0.5 para 500ml)"
-            },
-            quantity: {
-              type: SchemaType.INTEGER,
-              description: "Quantidade deste exato item"
-            }
+            required: ['style', 'size', 'quantity'],
           },
-          required: ["style", "size", "quantity"]
-        }
-      }
+        },
+      },
+      required: ['customer_name', 'delivery_address', 'delivery_neighborhood_id', 'items'],
     },
-    required: ["customer_name", "delivery_address", "delivery_neighborhood_id", "items"]
-  }
+  },
 };
 
 export const agentService = {
-  
+
   async getSystemPrompt(): Promise<string> {
     const settings = await db.getSettings();
     const neighborhoods = await db.getNeighborhoodFees();
@@ -69,7 +78,7 @@ export const agentService = {
     }
 
     return `Você é um assistente virtual amigável do "Açaí do Ronaldo". O seu objetivo é tirar pedidos de açaí natural batido na hora pelo WhatsApp.
-Sempre seja educado, use emojis e fale de maneira calorosa. 
+Sempre seja educado, use emojis e fale de maneira calorosa.
 
 SOBRE O NOSSO AÇAÍ:
 - Trabalhamos exclusivamente com polpa pura de açaí batido (sem corantes, conservantes ou misturas gourmet).
@@ -85,54 +94,89 @@ REGRAS DO ATENDIMENTO:
 3. Se ele não falar o bairro, pergunte qual é o bairro para informar a taxa de entrega.
 4. Pergunte o endereço completo da rua e número.
 5. Confirme o resumo do pedido com ele.
-6. **MUITO IMPORTANTE:** Assim que você tiver TODAS as informações (nome, itens, bairro mapeado e endereço da rua), você NÃO deve apenas responder com texto. Você DEVE usar a ferramenta (function call) "finish_order" passando os dados estruturados. 
+6. **MUITO IMPORTANTE:** Assim que você tiver TODAS as informações (nome, itens, bairro mapeado e endereço da rua), você NÃO deve apenas responder com texto. Você DEVE usar a ferramenta (function call) "finish_order" passando os dados estruturados.
 7. Pagamento: Diga ao cliente que logo após confirmar o pedido, ele receberá um link da InfinitePay para pagamento rápido (PIX ou Cartão). Não tente gerar o link você mesmo, o sistema fará isso quando você invocar o "finish_order".
 
 Mantenha as respostas curtas e diretas, afinal é WhatsApp.`;
   },
 
   /**
-   * Processa uma mensagem do usuário mantendo o histórico
+   * Processa uma mensagem do usuário mantendo o histórico.
+   *
+   * O histórico é recebido no formato { role: 'user' | 'model', parts: [{ text }] }
+   * (mantido por compatibilidade com o webhook) e convertido para o formato
+   * de mensagens da OpenAI/OpenRouter internamente.
    */
-  async processMessage(userMessage: string, history: {role: string, parts: {text: string}[]}[] = []) {
+  async processMessage(userMessage: string, history: { role: string; parts: { text: string }[] }[] = []) {
+    if (!OPENROUTER_API_KEY) {
+      console.error('OPENROUTER_API_KEY não configurada.');
+      return {
+        type: 'text',
+        data: 'Ops, nosso sistema de IA está temporariamente indisponível. Tente novamente em instantes. 💜',
+      };
+    }
+
     try {
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        tools: [{ functionDeclarations: [finishOrderDeclaration] }],
-        systemInstruction: await this.getSystemPrompt(),
+      const messages = [
+        { role: 'system', content: await this.getSystemPrompt() },
+        ...history.map(h => ({
+          role: h.role === 'model' ? 'assistant' : 'user',
+          content: h.parts?.[0]?.text || '',
+        })),
+        { role: 'user', content: userMessage },
+      ];
+
+      const response = await fetch(OPENROUTER_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          // Cabeçalhos opcionais recomendados pela OpenRouter
+          'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+          'X-Title': 'Acai do Ronaldo',
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages,
+          tools: [finishOrderTool],
+          tool_choice: 'auto',
+        }),
       });
 
-      const chat = model.startChat({
-        history: history,
-      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erro na OpenRouter:', response.status, errorText);
+        return {
+          type: 'text',
+          data: 'Ops, nosso sistema de IA está passando por uma instabilidade rápida. Poderia repetir a última mensagem? 💜',
+        };
+      }
 
-      const result = await chat.sendMessage(userMessage);
-      const response = result.response;
-      
-      const functionCalls = response.functionCalls();
-      
-      if (functionCalls && functionCalls.length > 0) {
-        // A IA decidiu fechar o pedido!
-        const call = functionCalls[0];
-        if (call.name === 'finish_order') {
-          return {
-            type: 'finish_order',
-            data: call.args
-          };
+      const data = await response.json();
+      const choice = data.choices?.[0];
+      const toolCalls = choice?.message?.tool_calls;
+
+      if (toolCalls && toolCalls.length > 0) {
+        const call = toolCalls[0];
+        if (call.function?.name === 'finish_order') {
+          // Os argumentos vêm como string JSON no formato OpenAI.
+          const args = typeof call.function.arguments === 'string'
+            ? JSON.parse(call.function.arguments)
+            : call.function.arguments;
+          return { type: 'finish_order', data: args };
         }
       }
 
-      // Se não fechou pedido, apenas retorna o texto da resposta
       return {
         type: 'text',
-        data: response.text()
+        data: choice?.message?.content || 'Desculpe, não entendi. Pode repetir? 💜',
       };
 
     } catch (err) {
-      console.error("Erro no Gemini API:", err);
+      console.error('Erro no agente (OpenRouter):', err);
       return {
         type: 'text',
-        data: "Ops, nosso sistema de IA está passando por uma instabilidade rápida. Poderia repetir a última mensagem? 💜"
+        data: 'Ops, nosso sistema de IA está passando por uma instabilidade rápida. Poderia repetir a última mensagem? 💜',
       };
     }
   }

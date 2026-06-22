@@ -31,20 +31,30 @@ export async function POST(req: NextRequest) {
     const fromMe = info.IsFromMe; // mensagens enviadas por nós, ignoramos
     const isGroup = info.IsGroup;
 
-    if (fromMe || isGroup || !textMessage || !senderJid) {
-      // Ignorar grupos, mensagens próprias e não-texto
-      return NextResponse.json({ ok: true, reason: 'Ignorado (grupo, próprio ou não-texto)' });
+    if (fromMe || isGroup || !senderJid) {
+      // Ignorar grupos e mensagens enviadas por nós
+      return NextResponse.json({ ok: true, reason: 'Ignorado (grupo ou próprio)' });
     }
 
     // Remove o domínio e um eventual sufixo de dispositivo (ex: "5591...:55@s.whatsapp.net")
     const phoneNumber = senderJid.split('@')[0].split(':')[0];
+
+    // Mensagem não-texto (áudio, imagem, figurinha, documento...): por enquanto só atendemos texto.
+    // Em vez de ignorar silenciosamente, respondemos pedindo que o cliente escreva.
+    if (!textMessage) {
+      await evolutionService.sendText(
+        phoneNumber,
+        'Oi! 👋 Por enquanto só consigo atender por *mensagens de texto* 🙏 Pode me escrever o seu pedido, por favor?'
+      );
+      return NextResponse.json({ ok: true, reason: 'Não-texto: auto-retorno enviado' });
+    }
     
     // Recuperar histórico do banco de dados (as últimas ~20 interações para contexto)
     let history = await db.getChatHistory(phoneNumber);
     
-    // O Gemini espera o history no formato: { role: 'user' | 'model', parts: [{ text: '...' }] }
+    // O agente espera o history no formato: { role: 'user' | 'model', parts: [{ text: '...' }] }
     
-    // Processar a mensagem pelo agente (Gemini)
+    // Processar a mensagem pelo agente de IA (OpenRouter)
     const aiResult = await agentService.processMessage(textMessage, history);
     
     // Atualiza o histórico
@@ -56,7 +66,7 @@ export async function POST(req: NextRequest) {
       responseText = aiResult.data as string;
       history.push({ role: 'model', parts: [{ text: responseText }] });
     } else if (aiResult.type === 'finish_order') {
-      // O Gemini estruturou o pedido!
+      // A IA estruturou o pedido!
       const orderData = aiResult.data as any;
       
       // Buscar configurações e taxa de entrega
@@ -77,7 +87,7 @@ export async function POST(req: NextRequest) {
       // Calcular valor dos itens e formatar para o formato que db.createOrder espera
       let itemsTotal = 0;
       const formattedItems = orderData.items.map((i: any) => {
-        // Normaliza o estilo para minúsculo (o Gemini pode mandar "Grosso" ou "Medio")
+        // Normaliza o estilo para minúsculo (a IA pode mandar "Grosso" ou "Medio")
         const styleNormalized = i.style.toLowerCase() as 'grosso' | 'medio';
         const size = Number(i.size) as 0.5 | 1.0;
         const price = PRICES[styleNormalized]?.[size] || 0;
