@@ -5,7 +5,8 @@ CREATE TABLE store_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   default_delivery_fee DECIMAL(10, 2) NOT NULL DEFAULT 6.00,
   whatsapp_number TEXT NOT NULL DEFAULT '5581999999999',
-  is_open BOOLEAN NOT NULL DEFAULT true
+  is_open BOOLEAN NOT NULL DEFAULT true,
+  delivery_pin TEXT -- PIN simples de acesso à tela do entregador
 );
 
 -- Inserir configuração padrão inicial
@@ -16,7 +17,8 @@ VALUES (6.00, '5581999999999', true);
 CREATE TABLE neighborhood_fees (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
-  delivery_fee DECIMAL(10, 2) NOT NULL
+  delivery_fee DECIMAL(10, 2) NOT NULL,
+  route_order INTEGER -- Ordem do bairro na rota de entrega (menor = primeiro)
 );
 
 -- 3. Tabela de Pedidos

@@ -17,6 +17,7 @@ export default function AdminConfig() {
   const [defaultFee, setDefaultFee] = useState('6.00');
   const [whatsapp, setWhatsapp] = useState('5581999999999');
   const [shopOpen, setShopOpen] = useState(true);
+  const [deliveryPin, setDeliveryPin] = useState('');
 
   // Inputs de Novo Bairro
   const [newBairroName, setNewBairroName] = useState('');
@@ -38,6 +39,7 @@ export default function AdminConfig() {
         setDefaultFee(fetchedSettings.default_delivery_fee.toString());
         setWhatsapp(fetchedSettings.whatsapp_number);
         setShopOpen(fetchedSettings.is_open);
+        setDeliveryPin(fetchedSettings.delivery_pin || '');
       } catch (err) {
         console.error("Erro ao carregar configurações:", err);
       } finally {
@@ -64,7 +66,8 @@ export default function AdminConfig() {
         id: settings.id,
         default_delivery_fee: feeVal,
         whatsapp_number: whatsapp,
-        is_open: shopOpen
+        is_open: shopOpen,
+        delivery_pin: deliveryPin.trim()
       });
       setSettings(updated);
       setSaveMessage('Configurações gerais salvas com sucesso!');
@@ -114,6 +117,22 @@ export default function AdminConfig() {
       setNeighborhoods(prev => prev.filter(n => n.id !== id));
     }
   };
+
+  // Define a posição do bairro na rota de entrega (campo "Rota")
+  const handleRouteOrderChange = async (id: string, value: string) => {
+    const order = value.trim() === '' ? null : parseInt(value, 10);
+    if (order !== null && (isNaN(order) || order < 0)) return;
+    setNeighborhoods(prev => prev.map(n => (n.id === id ? { ...n, route_order: order } : n)));
+    await db.updateNeighborhoodRouteOrder(id, order);
+  };
+
+  // Bairros ordenados pela rota (depois por nome) para exibição
+  const sortedNeighborhoods = [...neighborhoods].sort((a, b) => {
+    const ra = a.route_order ?? Number.MAX_SAFE_INTEGER;
+    const rb = b.route_order ?? Number.MAX_SAFE_INTEGER;
+    if (ra !== rb) return ra - rb;
+    return a.name.localeCompare(b.name);
+  });
 
   return (
     <div>
@@ -197,6 +216,22 @@ export default function AdminConfig() {
                   </span>
                 </div>
 
+                <div className={styles.formGroup}>
+                  <label htmlFor="deliveryPin">PIN do Entregador</label>
+                  <input
+                    type="text"
+                    id="deliveryPin"
+                    value={deliveryPin}
+                    onChange={(e) => setDeliveryPin(e.target.value)}
+                    className={styles.input}
+                    placeholder="Ex: 1234"
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                    <Info size={12} />
+                    Código que o entregador digita para abrir a tela de entregas (/entregador). Deixe em branco para acesso livre.
+                  </span>
+                </div>
+
                 {saveMessage && (
                   <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem', backgroundColor: 'var(--green-light)', borderRadius: '8px', marginBottom: '1.25rem', color: 'var(--green-primary)', fontSize: '0.85rem', fontWeight: 600 }}>
                     <AlertCircle size={18} style={{ flexShrink: 0 }} />
@@ -219,7 +254,7 @@ export default function AdminConfig() {
               Taxas de Frete por Bairro
             </h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-              Adicione exceções de taxas de entrega para bairros mais distantes. Clientes poderão selecionar estes bairros na tela de checkout para atualização dinâmica do valor do frete.
+              Adicione exceções de taxas de entrega para bairros mais distantes. Clientes poderão selecionar estes bairros na tela de checkout para atualização dinâmica do valor do frete. O campo <strong>Rota</strong> define a ordem em que o entregador deve seguir (1 = primeiro).
             </p>
 
             {/* Formulário Inline de Cadastro */}
@@ -266,14 +301,27 @@ export default function AdminConfig() {
               </div>
             ) : (
               <div className={styles.list}>
-                {neighborhoods.map(neighborhood => (
+                {sortedNeighborhoods.map(neighborhood => (
                   <div key={neighborhood.id} className={styles.listItem}>
                     <span className={styles.listItemName}>{neighborhood.name}</span>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        Rota
+                        <input
+                          type="number"
+                          min="1"
+                          value={neighborhood.route_order ?? ''}
+                          onChange={(e) => handleRouteOrderChange(neighborhood.id, e.target.value)}
+                          className={styles.input}
+                          style={{ width: '60px', padding: '0.35rem 0.5rem', fontSize: '0.85rem', margin: 0 }}
+                          placeholder="-"
+                          title="Ordem na rota de entrega"
+                        />
+                      </label>
                       <span className={styles.listItemFee}>
                         R$ {Number(neighborhood.delivery_fee).toFixed(2)}
                       </span>
-                      <button 
+                      <button
                         onClick={() => handleDeleteNeighborhood(neighborhood.id)}
                         className={styles.deleteBtn}
                         title="Remover bairro"

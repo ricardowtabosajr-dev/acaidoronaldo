@@ -15,6 +15,7 @@ export interface NeighborhoodFee {
   id: string;
   name: string;
   delivery_fee: number;
+  route_order?: number | null; // Posição do bairro na rota de entrega (menor = primeiro)
 }
 
 export interface OrderItem {
@@ -53,6 +54,7 @@ export interface StoreSettings {
   default_delivery_fee: number;
   whatsapp_number: string;
   is_open: boolean;
+  delivery_pin?: string; // PIN simples de acesso à tela do entregador
 }
 
 // SIMULAÇÃO DE BANCO LOCAL (LOCALSTORAGE) PARA DESENVOLVIMENTO/HOMOLOGAÇÃO OFFLINE
@@ -113,6 +115,17 @@ export const db = {
     }
     const current = getLocalStorageData('acai_neighborhood_fees', DEFAULT_FEES);
     setLocalStorageData('acai_neighborhood_fees', current.filter(f => f.id !== id));
+    return true;
+  },
+
+  // Define a posição do bairro na rota de entrega (menor = primeiro)
+  async updateNeighborhoodRouteOrder(id: string, route_order: number | null): Promise<boolean> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from('neighborhood_fees').update({ route_order }).eq('id', id);
+      return !error;
+    }
+    const current = getLocalStorageData('acai_neighborhood_fees', DEFAULT_FEES);
+    setLocalStorageData('acai_neighborhood_fees', current.map(f => (f.id === id ? { ...f, route_order } : f)));
     return true;
   },
 
@@ -266,7 +279,8 @@ export const db = {
         const { data, error } = await supabase.from('store_settings').update({
           default_delivery_fee: settings.default_delivery_fee,
           whatsapp_number: settings.whatsapp_number,
-          is_open: settings.is_open
+          is_open: settings.is_open,
+          delivery_pin: settings.delivery_pin ?? null
         }).eq('id', current.id).select().single();
         if (!error && data) return data as StoreSettings;
       }
