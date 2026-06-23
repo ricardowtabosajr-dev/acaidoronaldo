@@ -239,16 +239,29 @@ export default function AdminPedidos() {
 
                   {/* Fluxo de Transição de Status */}
                   {order.status === 'pending' && (
-                    <button 
-                      onClick={() => {
-                        handleUpdateStatus(order.id, 'preparing');
-                        sendWhatsappNotification(order, 'preparing');
-                      }}
-                      className={`${styles.btn} ${styles.btnPrimary}`}
-                    >
-                      <ThumbsUp size={14} />
-                      Começar a Bater
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          handleUpdateStatus(order.id, 'preparing');
+                          sendWhatsappNotification(order, 'preparing');
+                        }}
+                        className={`${styles.btn} ${styles.btnPrimary}`}
+                      >
+                        <ThumbsUp size={14} />
+                        Começar a Bater
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleUpdateStatus(order.id, 'delivering');
+                          sendWhatsappNotification(order, 'delivering');
+                        }}
+                        className={`${styles.btn} ${styles.btnPrimary}`}
+                        title="Enviar direto para a tela do entregador (pula a etapa de preparo)"
+                      >
+                        <Truck size={14} />
+                        Despachar Direto
+                      </button>
+                    </>
                   )}
 
                   {order.status === 'preparing' && (
@@ -277,25 +290,30 @@ export default function AdminPedidos() {
                     </button>
                   )}
 
-                  {/* Atalhos rápidos para WhatsApp manual */}
+                  {/* Atalhos de notificação no WhatsApp (NÃO mudam o status do pedido) */}
                   {order.status !== 'cancelled' && order.status !== 'delivered' && (
-                    <div style={{ display: 'flex', gap: '0.25rem', width: '100%', justifyContent: 'flex-end' }}>
-                      <button 
-                        onClick={() => sendWhatsappNotification(order, 'preparing')}
-                        className={`${styles.btn} ${styles.btnWhatsapp}`}
-                        title="Notificar preparação no WhatsApp"
-                      >
-                        <MessageSquare size={14} />
-                        Batendo
-                      </button>
-                      <button 
-                        onClick={() => sendWhatsappNotification(order, 'delivering')}
-                        className={`${styles.btn} ${styles.btnWhatsapp}`}
-                        title="Notificar envio no WhatsApp"
-                      >
-                        <Truck size={14} />
-                        Rota
-                      </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '100%', alignItems: 'flex-end' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                        Avisar cliente no WhatsApp:
+                      </span>
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        <button
+                          onClick={() => sendWhatsappNotification(order, 'preparing')}
+                          className={`${styles.btn} ${styles.btnWhatsapp}`}
+                          title="Só envia uma mensagem no WhatsApp avisando que está preparando (não muda o status)"
+                        >
+                          <MessageSquare size={14} />
+                          Avisar: batendo
+                        </button>
+                        <button
+                          onClick={() => sendWhatsappNotification(order, 'delivering')}
+                          className={`${styles.btn} ${styles.btnWhatsapp}`}
+                          title="Só envia uma mensagem no WhatsApp avisando que saiu para entrega (não muda o status)"
+                        >
+                          <MessageSquare size={14} />
+                          Avisar: saiu
+                        </button>
+                      </div>
                     </div>
                   )}
 
